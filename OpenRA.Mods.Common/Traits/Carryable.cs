@@ -131,6 +131,9 @@ namespace OpenRA.Mods.Common.Traits
 			if (delayPickups.Any(d => d.IsTraitEnabled() && !d.TryLockForPickup(self, carrier)))
 				return LockResponse.Pending;
 
+			if (mobile != null && !mobile.CanStayInCell(self.Location))
+				return LockResponse.Pending;
+
 			if (state != State.Locked)
 			{
 				state = State.Locked;
