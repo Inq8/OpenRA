@@ -98,7 +98,7 @@ namespace OpenRA.Mods.Common.Projectiles
 		}
 	}
 
-	public class Railgun : IProjectile
+	public class Railgun : IProjectile, ISync
 	{
 		readonly ProjectileArgs args;
 		readonly RailgunInfo info;
