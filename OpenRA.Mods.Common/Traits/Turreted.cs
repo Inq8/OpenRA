@@ -154,7 +154,7 @@ namespace OpenRA.Mods.Common.Traits
 			}
 		}
 
-		public WRot LocalOrientation { get; private set; }
+		public WRot LocalOrientation { get; protected set; }
 
 		// For subclasses that want to move the turret relative to the body
 		protected WVec localOffset = WVec.Zero;
