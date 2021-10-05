@@ -223,8 +223,13 @@ namespace OpenRA.Mods.Common.Activities
 					return false;
 				}
 
+				var sound = aircraft.Info.LandingSounds.RandomOrDefault(Game.CosmeticRandom);
+
 				if (aircraft.Info.LandingSounds.Length > 0)
-					Game.Sound.Play(SoundType.World, aircraft.Info.LandingSounds, self.World, aircraft.CenterPosition);
+				{
+					var shouldStart = aircraft.Info.AudibleThroughFog || (!self.World.ShroudObscures(self.CenterPosition) && !self.World.FogObscures(self.CenterPosition));
+					Game.Sound.Play(SoundType.World, sound, self.CenterPosition, shouldStart ? aircraft.Info.Volume : 0f);
+				}
 
 				foreach (var notify in self.TraitsImplementing<INotifyLanding>())
 					notify.Landing(self);
