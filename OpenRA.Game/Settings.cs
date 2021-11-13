@@ -288,6 +288,9 @@ namespace OpenRA
 		[Desc("Allow mods to enable the Discord service that can interact with a local Discord client.")]
 		public bool EnableDiscordService = true;
 
+		// added for CA
+		public bool SelectionTooltip = true;
+
 		public TextNotificationPoolFilters TextNotificationPoolFilters = TextNotificationPoolFilters.Feedback | TextNotificationPoolFilters.Transients;
 	}
 
