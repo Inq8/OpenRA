@@ -106,8 +106,9 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 					gs => gs.LobbyOptions[option.Id].IsLocked);
 
 				checkbox.GetText = () => option.Name;
+				checkbox.GetTooltipText = () => option.Name;
 				if (option.Description != null)
-					checkbox.GetTooltipText = () => option.Description;
+					checkbox.GetTooltipDesc = () => option.Description;
 
 				checkbox.IsVisible = () => true;
 				checkbox.IsChecked = () => optionEnabled.Update(orderManager.LobbyInfo.GlobalSettings);
@@ -147,8 +148,9 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				});
 
 				dropdown.GetText = () => getOptionLabel.Update(optionValue.Update(orderManager.LobbyInfo.GlobalSettings).Value);
+				dropdown.GetTooltipText = () => option.Name;
 				if (option.Description != null)
-					dropdown.GetTooltipText = () => option.Description;
+					dropdown.GetTooltipDesc = () => option.Description;
 				dropdown.IsVisible = () => true;
 				dropdown.IsDisabled = () => configurationDisabled() ||
 					optionValue.Update(orderManager.LobbyInfo.GlobalSettings).IsLocked;
