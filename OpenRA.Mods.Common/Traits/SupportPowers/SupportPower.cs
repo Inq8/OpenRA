@@ -39,6 +39,9 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Allow this to be used only once.")]
 		public readonly bool OneShot = false;
 
+		[Desc("Cost to deploy.")]
+		public readonly int Cost = 0;
+
 		[CursorReference]
 		[Desc("Cursor to display for using this support power.")]
 		public readonly string Cursor = "ability";
