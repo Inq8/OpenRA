@@ -756,9 +756,9 @@ namespace OpenRA.Mods.Common.Traits
 	{
 		public readonly string Item;
 		public readonly ProductionQueue Queue;
-		public readonly int TotalCost;
 		public readonly Action OnComplete;
 
+		public int TotalCost{ get; private set; }
 		public int TotalTime { get; private set; }
 		public int RemainingTime { get; private set; }
 		public int RemainingCost { get; private set; }
@@ -795,6 +795,10 @@ namespace OpenRA.Mods.Common.Traits
 		{
 			if (!Started)
 			{
+				var cost = Queue.GetProductionCost(ai);
+				if (cost > 0)
+					RemainingCost = TotalCost = cost;
+
 				var time = Queue.GetBuildTime(ai, bi);
 				if (time > 0)
 					RemainingTime = TotalTime = time;
