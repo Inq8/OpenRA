@@ -130,6 +130,9 @@ namespace OpenRA.Mods.Common.Activities
 					target = Target.FromCell(self.World, newLocation.Value);
 					targetPosition = target.CenterPosition + offset;
 					landingCell = self.World.Map.CellContaining(targetPosition);
+
+					if ((targetPosition - pos).LengthSquared == 0)
+						return true;
 				}
 			}
 
