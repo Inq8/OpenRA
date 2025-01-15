@@ -204,6 +204,11 @@ namespace OpenRA.Mods.Common.Traits
 			self.World.OrderGenerator = new SelectGenericPowerTarget(order, manager, info.Cursor, MouseButton.Left);
 		}
 
+		public virtual bool Prepare(Actor self, Order order, SupportPowerManager manager)
+		{
+			return true;
+		}
+
 		public virtual void Activate(Actor self, Order order, SupportPowerManager manager)
 		{
 			if (Info.DisplayRadarPing && manager.RadarPings != null)

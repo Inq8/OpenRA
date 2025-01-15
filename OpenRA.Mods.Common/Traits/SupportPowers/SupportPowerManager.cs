@@ -258,6 +258,9 @@ namespace OpenRA.Mods.Common.Traits
 			if (!HasSufficientFunds(power, true))
 				return;
 
+			if (!power.Prepare(power.Self, order, Manager))
+				return;
+
 			// Note: order.Subject is the *player* actor
 			power.Activate(power.Self, order, Manager);
 			remainingSubTicks = TotalTicks * 100;
