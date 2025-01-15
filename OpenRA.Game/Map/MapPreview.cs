@@ -476,7 +476,7 @@ namespace OpenRA
 					var playersString = Encoding.UTF8.GetString(Convert.FromBase64String(r.players_block));
 					newData.Players = new MapPlayers(MiniYaml.FromString(playersString));
 
-					var rulesString = Encoding.UTF8.GetString(Convert.FromBase64String(r.rules));
+					var rulesString = Encoding.UTF8.GetString(Convert.FromBase64String(r.rules ?? ""));
 					var rulesYaml = new MiniYaml("", MiniYaml.FromString(rulesString)).ToDictionary();
 					newData.SetCustomRules(modData, this, rulesYaml, null);
 				}
