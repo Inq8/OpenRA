@@ -224,6 +224,12 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	[RequireExplicitImplementation]
+	public interface INotifyPassengersDamage
+	{
+		void DamagePassengers(int damage, Actor attacker, int amount, Dictionary<string, int> versus, BitSet<DamageType> damageTypes, IEnumerable<int> damageModifiers);
+	}
+
+	[RequireExplicitImplementation]
 	public interface INotifyDemolition
 	{
 		void Demolishing(Actor self);
