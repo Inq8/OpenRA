@@ -65,7 +65,7 @@ namespace OpenRA.Mods.Cnc.Traits
 	}
 
 	[Desc("Provides access to the disguise command, which makes the actor appear to be another player's actor.")]
-	sealed class DisguiseInfo : TraitInfo
+	public class DisguiseInfo : TraitInfo
 	{
 		[VoiceReference]
 		public readonly string Voice = "Action";
@@ -99,7 +99,7 @@ namespace OpenRA.Mods.Cnc.Traits
 		public override object Create(ActorInitializer init) { return new Disguise(init.Self, this); }
 	}
 
-	sealed class Disguise : IEffectiveOwner, IIssueOrder, IResolveOrder, IOrderVoice, INotifyAttack,
+	public class Disguise : IEffectiveOwner, IIssueOrder, IResolveOrder, IOrderVoice, INotifyAttack,
 		INotifyDamage, INotifyLoadCargo, INotifyUnloadCargo, INotifyDemolition, INotifyInfiltration, ITick
 	{
 		public ActorInfo AsActor { get; private set; }
