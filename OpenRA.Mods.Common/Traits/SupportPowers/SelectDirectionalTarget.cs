@@ -21,7 +21,7 @@ namespace OpenRA.Mods.Common.Traits
 {
 	public class SelectDirectionalTarget : IOrderGenerator
 	{
-		const int MinDragThreshold = 20;
+		const int MinDragThreshold = 0;
 		const int MaxDragThreshold = 75;
 
 		readonly string order;
@@ -82,7 +82,9 @@ namespace OpenRA.Mods.Common.Traits
 
 				currentArrow = GetArrow(angle);
 
-				mouseAttachment.SetAttachment(targetLocation, currentArrow.Sprite, info.DirectionArrowPalette);
+				if (IsOutsideDragZone)
+					mouseAttachment.SetAttachment(targetLocation, currentArrow.Sprite, info.DirectionArrowPalette);
+
 				dragStarted = true;
 			}
 

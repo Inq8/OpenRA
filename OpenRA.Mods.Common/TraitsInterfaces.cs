@@ -289,6 +289,12 @@ namespace OpenRA.Mods.Common.Traits
 	}
 
 	[RequireExplicitImplementation]
+	public interface INotifyPassengersDamage
+	{
+		void DamagePassengers(int damage, Actor attacker, int amount, Dictionary<string, int> versus, BitSet<DamageType> damageTypes, IEnumerable<int> damageModifiers);
+	}
+
+	[RequireExplicitImplementation]
 	public interface INotifyDemolition
 	{
 		void Demolishing(Actor self);
@@ -704,6 +710,21 @@ namespace OpenRA.Mods.Common.Traits
 			: base(name, displayOrder)
 		{
 			GetLabels = getLabels;
+			GetValue = getValue;
+			OnChange = onChange;
+		}
+	}
+
+	public class EditorActorTextField : EditorActorOption
+	{
+		public readonly Func<EditorActorPreview, string> GetValue;
+		public readonly Action<EditorActorPreview, string> OnChange;
+
+		public EditorActorTextField(string name, int displayOrder,
+			Func<EditorActorPreview, string> getValue,
+			Action<EditorActorPreview, string> onChange)
+			: base(name, displayOrder)
+		{
 			GetValue = getValue;
 			OnChange = onChange;
 		}

@@ -147,6 +147,12 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Sounds to play when the actor is landing.")]
 		public readonly string[] LandingSounds = Array.Empty<string>();
 
+		[Desc("Do the sounds play under shroud or fog.")]
+		public readonly bool AudibleThroughFog = false;
+
+		[Desc("Volume the sounds played at.")]
+		public readonly float Volume = 1f;
+
 		[Desc("The distance of the resupply base that the aircraft will wait for its turn.")]
 		public readonly WDist WaitDistanceFromResupplyBase = new(3072);
 
