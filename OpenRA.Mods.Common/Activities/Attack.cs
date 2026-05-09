@@ -94,6 +94,9 @@ namespace OpenRA.Mods.Common.Activities
 
 		public override bool Tick(Actor self)
 		{
+			if (IsCanceling && NextActivity != null)
+				ResponsiveMoveForwarder.Notify(ChildActivity, ResponsiveCancelType.ReplacementActivity);
+
 			if (IsCanceling)
 				return true;
 

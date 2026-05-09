@@ -39,7 +39,10 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			// We are now in range. Don't move any further!
 			// HACK: This works around the pathfinder not returning the shortest path
-			return AtCorrectRange(self.CenterPosition) && Mobile.CanInteractWithGroundLayer(self) && Mobile.CanStayInCell(self.Location);
+			return AtCorrectRange(self.CenterPosition)
+				&& Mobile.CanInteractWithGroundLayer(self)
+				&& Mobile.CanStayInCell(self.Location)
+				&& !Mobile.IsMovingBetweenCells;
 		}
 
 		protected override bool ShouldRepath(Actor self, CPos targetLocation)

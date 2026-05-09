@@ -92,6 +92,13 @@ namespace OpenRA.Mods.Common.Traits
 
 				var targetLocation = move.NearestMoveableCell(cell);
 				var assaultMoving = order.OrderString == "AssaultMove";
+				var autoTarget = self.TraitOrDefault<AutoTarget>();
+				var immediateTarget = !order.Queued && autoTarget != null
+					? autoTarget.ScanForTarget(self, false, true, true)
+					: Target.Invalid;
+
+				if (!order.Queued && immediateTarget.Type != TargetType.Invalid && self.CurrentActivity != null)
+					ResponsiveMoveForwarder.Notify(self.CurrentActivity, ResponsiveCancelType.LandBeforeNextActivity, immediateTarget.CenterPosition);
 
 				// TODO: this should scale with unit selection group size.
 				self.QueueActivity(order.Queued, new AttackMoveActivity(self, () => move.MoveTo(targetLocation, 8, targetLineColor: Info.TargetLineColor), assaultMoving));

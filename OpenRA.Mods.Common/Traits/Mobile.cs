@@ -43,6 +43,10 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("If set to true, this unit won't stop to turn, it will turn while moving instead.")]
 		public readonly bool TurnsWhileMoving = false;
 
+		[Desc("If set to true, immediate move and stop orders can resolve while the actor is still between cells.",
+			"Only supported when TurnsWhileMoving is enabled or TurnSpeed is less than 512.")]
+		public readonly bool ResponsiveBetweenCells = false;
+
 		[CursorReference]
 		[Desc("Cursor to display when a move order can be issued at target location.")]
 		public readonly string Cursor = "move";
@@ -104,6 +108,9 @@ namespace OpenRA.Mods.Common.Traits
 
 		public override void RulesetLoaded(Ruleset rules, ActorInfo ai)
 		{
+			if (ResponsiveBetweenCells && !(TurnsWhileMoving || TurnSpeed.Angle >= 512))
+				throw new YamlException("ResponsiveBetweenCells requires TurnsWhileMoving to be enabled or TurnSpeed to be less than 512.");
+
 			var locomotorInfos = rules.Actors[SystemActors.World].TraitInfos<LocomotorInfo>()
 				.Where(li => li.Name == Locomotor).ToList();
 			if (locomotorInfos.Count == 0)

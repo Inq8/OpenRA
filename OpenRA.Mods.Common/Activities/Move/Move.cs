@@ -38,6 +38,7 @@ namespace OpenRA.Mods.Common.Activities
 
 		int carryoverProgress;
 		int lastMovePartCompletedTick;
+		readonly ResponsiveMoveSupport responsiveMove;
 
 		bool alreadyAtDestination;
 		List<CPos> path;
@@ -58,6 +59,7 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			// PERF: Because we can be sure that OccupiesSpace is Mobile here, we can save some performance by avoiding querying for the trait.
 			mobile = (Mobile)self.OccupiesSpace;
+			responsiveMove = new ResponsiveMoveSupport(mobile);
 
 			getPath = check =>
 			{
@@ -78,6 +80,7 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			// PERF: Because we can be sure that OccupiesSpace is Mobile here, we can save some performance by avoiding querying for the trait.
 			mobile = (Mobile)self.OccupiesSpace;
+			responsiveMove = new ResponsiveMoveSupport(mobile);
 
 			getPath = check =>
 			{
@@ -104,6 +107,7 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			// PERF: Because we can be sure that OccupiesSpace is Mobile here, we can save some performance by avoiding querying for the trait.
 			mobile = (Mobile)self.OccupiesSpace;
+			responsiveMove = new ResponsiveMoveSupport(mobile);
 
 			this.getPath = getPath;
 
@@ -119,10 +123,63 @@ namespace OpenRA.Mods.Common.Activities
 			return (alreadyAtDestination, path);
 		}
 
+		bool TryResolveResponsiveCancel(Actor self)
+		{
+			if (!responsiveMove.TryResolveCancel(self, IsCanceling, NextActivity != null, out var resolution))
+				return false;
+
+			ApplyResponsiveCancelResolution(self, resolution);
+			return true;
+		}
+
+		void ApplyResponsiveCancelResolution(Actor self, in ResponsiveCancelResolution resolution)
+		{
+			path?.Clear();
+			hadNoPath = false;
+			hasWaited = false;
+			carryoverProgress = 0;
+			destination = resolution.Landing.Cell;
+
+			// Reserve the resolved endpoint without snapping CenterPosition.
+			mobile.SetLocation(resolution.Landing.Cell, resolution.Landing.SubCell, resolution.Landing.Cell, resolution.Landing.SubCell);
+			if (!resolution.HasReplacementActivity)
+				QueueResponsiveLandingDrag(self, resolution.Landing);
+
+			mobile.MoveResult = MoveResult.CompleteCanceled;
+		}
+
+		bool TryQueueResponsiveSettle(Actor self)
+		{
+			if (!responsiveMove.TryGetSettleLanding(self, out var landing))
+				return false;
+
+			return QueueResponsiveLandingDrag(self, landing);
+		}
+
+		bool QueueResponsiveLandingDrag(Actor self, in ResponsiveLanding landing)
+		{
+			var currentPosition = mobile.CenterPosition;
+			var delta = landing.Position - currentPosition;
+			if (delta.LengthSquared == 0)
+				return false;
+
+			var speed = mobile.MovementSpeedForCell(landing.Cell);
+			var length = speed > 0 ? Math.Max(1, delta.Length / speed) : 1;
+			var facing = delta.HorizontalLengthSquared != 0 ? delta.Yaw : mobile.Facing;
+			QueueChild(new Drag(self, currentPosition, landing.Position, length, facing));
+			return true;
+		}
+
+		internal void NotifyResponsiveCancel(ResponsiveCancelType? type = null, WPos? preferredLandingPosition = null)
+		{
+			responsiveMove.NotifyCancel(type, preferredLandingPosition);
+		}
+
 		protected override void OnFirstRun(Actor self)
 		{
 			startTicks = self.World.WorldTick;
 			mobile.MoveResult = MoveResult.InProgress;
+			responsiveMove.Reset();
 
 			if (evaluateNearestMovableCell && destination.HasValue)
 			{
@@ -156,12 +213,18 @@ namespace OpenRA.Mods.Common.Activities
 
 			if (alreadyAtDestination)
 			{
+				if (TryQueueResponsiveSettle(self))
+					return false;
+
 				mobile.MoveResult = MoveResult.CompleteDestinationReached;
 				return true;
 			}
 
 			if (destination == mobile.ToCell)
 			{
+				if (TryQueueResponsiveSettle(self))
+					return false;
+
 				if (hadNoPath)
 					mobile.MoveResult = MoveResult.CompleteDestinationBlocked;
 				else
@@ -212,12 +275,18 @@ namespace OpenRA.Mods.Common.Activities
 				return false;
 			}
 
+			// A responsive redirect has already resolved us into a single cell, but the actor may
+			// still be physically between the old segment endpoints. Start the new segment from the
+			// live world position so the redirect stays smooth.
+			var startFromCurrentPosition = responsiveMove.ShouldStartNextSegmentFromCurrentPosition(self);
+			var currentPosition = mobile.CenterPosition;
+
 			mobile.SetLocation(mobile.FromCell, mobile.FromSubCell, nextCell.Value.Cell, nextCell.Value.SubCell);
 
 			var map = self.World.Map;
-			var from = (mobile.FromCell.Layer == 0 ? map.CenterOfCell(mobile.FromCell) :
-				self.World.GetCustomMovementLayers()[mobile.FromCell.Layer].CenterOfCell(mobile.FromCell)) +
-				map.Grid.OffsetOfSubCell(mobile.FromSubCell);
+			var from = ResponsiveMoveSupport.CellCenterPosition(self, mobile.FromCell, mobile.FromSubCell);
+			if (startFromCurrentPosition)
+				from = currentPosition;
 
 			var to = Util.BetweenCells(self.World, mobile.FromCell, mobile.ToCell) +
 				(map.Grid.OffsetOfSubCell(mobile.FromSubCell) + map.Grid.OffsetOfSubCell(mobile.ToSubCell)) / 2;
@@ -457,6 +526,11 @@ namespace OpenRA.Mods.Common.Activities
 			public override bool Tick(Actor self)
 			{
 				var mobile = Move.mobile;
+
+				// MovePart is the safe point where a responsive cancel can either settle or hand off
+				// directly into a replacement move without waiting for the current full cell traversal.
+				if (Move.TryResolveResponsiveCancel(self))
+					return true;
 
 				// Only move by a full speed step if we didn't already move this tick.
 				// If we did, we limit the move to any carried-over leftover progress.

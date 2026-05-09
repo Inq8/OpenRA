@@ -89,6 +89,9 @@ namespace OpenRA.Mods.Common.Activities
 			// Target is hidden or dead, and we don't have a fallback position to move towards
 			var noTarget = useLastVisibleTarget && !lastVisibleTarget.IsValidFor(self);
 
+			if (IsCanceling && NextActivity != null)
+				ResponsiveMoveForwarder.Notify(ChildActivity, ResponsiveCancelType.ReplacementActivity);
+
 			// Cancel the current path if the activity asks to stop.
 			if (ShouldStop(self) || noTarget)
 				Cancel(self, true);
