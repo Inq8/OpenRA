@@ -924,7 +924,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				.OrderBy(o => o.DisplayOrder)
 				.ToArray();
 
-			resetOptionsButtonEnabled = mapOptions.Any(o => o.DefaultValue != serverOptions[o.Id].Value);
+			resetOptionsButtonEnabled = mapOptions.Any(o => serverOptions.ContainsKey(o.Id) && o.DefaultValue != serverOptions[o.Id].Value);
 		}
 
 		void OnGameStart()

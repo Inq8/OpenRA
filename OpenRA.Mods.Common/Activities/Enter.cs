@@ -74,6 +74,9 @@ namespace OpenRA.Mods.Common.Activities
 			if (!IsCanceling && useLastVisibleTarget && lastState == EnterState.Entering)
 				Cancel(self, true);
 
+			if (IsCanceling && NextActivity != null)
+				ResponsiveMoveForwarder.Notify(ChildActivity, ResponsiveCancelType.ReplacementActivity);
+
 			TickInner(self, target, useLastVisibleTarget);
 
 			// We need to wait for movement to finish before transitioning to

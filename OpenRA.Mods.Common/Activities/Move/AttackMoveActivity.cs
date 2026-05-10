@@ -54,7 +54,15 @@ namespace OpenRA.Mods.Common.Activities
 		public override bool Tick(Actor self)
 		{
 			if (IsCanceling || attackMove == null || autoTarget == null)
+			{
+				// Immediate attack-move replacements are queued on this wrapper activity.
+				// Forward that information to the child Move so ResponsiveBetweenCells can treat
+				// the cancel as a redirect instead of a stop-style nearest-cell landing.
+				if (IsCanceling && NextActivity != null)
+					ResponsiveMoveForwarder.Notify(ChildActivity, ResponsiveCancelType.ReplacementActivity);
+
 				return TickChild(self);
+			}
 
 			// We are currently not attacking, so scan for new targets.
 			if (ChildActivity == null || runningMoveActivity)
@@ -67,10 +75,18 @@ namespace OpenRA.Mods.Common.Activities
 				if (target.Type != TargetType.Invalid)
 				{
 					runningMoveActivity = false;
-					ChildActivity?.Cancel(self);
 
-					foreach (var ab in autoTarget.ActiveAttackBases)
-						QueueChild(ab.GetAttackActivity(self, AttackSource.AttackMove, target, autoTarget.AllowMove, false));
+					// Let ResponsiveBetweenCells finish resolving the current move before
+					// starting the attack activity. Queuing the attack directly onto the
+					// current move would make Move treat it as an in-flight redirect.
+					if (ChildActivity != null)
+					{
+						ResponsiveMoveForwarder.Notify(ChildActivity, preferredLandingPosition: target.CenterPosition);
+						ChildActivity.Cancel(self);
+					}
+					else
+						foreach (var ab in autoTarget.ActiveAttackBases)
+							QueueChild(ab.GetAttackActivity(self, AttackSource.AttackMove, target, autoTarget.AllowMove, false));
 				}
 
 				// Continue with the move activity (or queue a new one) when there are no targets.

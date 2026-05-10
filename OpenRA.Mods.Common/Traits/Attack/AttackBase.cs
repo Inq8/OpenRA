@@ -392,6 +392,10 @@ namespace OpenRA.Mods.Common.Traits
 				return;
 
 			var activity = GetAttackActivity(self, source, target, allowMove, forceAttack, targetLineColor);
+
+			if (!queued && source == AttackSource.Default && self.CurrentActivity != null)
+				ResponsiveMoveForwarder.Notify(self.CurrentActivity, ResponsiveCancelType.LandBeforeNextActivity, target.CenterPosition);
+
 			self.QueueActivity(queued, activity);
 			OnResolveAttackOrder(self, activity, target, queued, forceAttack);
 		}

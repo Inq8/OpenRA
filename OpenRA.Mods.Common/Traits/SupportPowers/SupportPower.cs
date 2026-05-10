@@ -42,6 +42,9 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Allow this to be used only once.")]
 		public readonly bool OneShot = false;
 
+		[Desc("Cost to deploy.")]
+		public readonly int Cost = 0;
+
 		[CursorReference]
 		[Desc("Cursor to display for using this support power.")]
 		public readonly string Cursor = "ability";
@@ -214,6 +217,11 @@ namespace OpenRA.Mods.Common.Traits
 		public virtual void SelectTarget(Actor self, string order, SupportPowerManager manager)
 		{
 			self.World.OrderGenerator = new SelectGenericPowerTarget(order, manager, info, MouseButton.Left);
+		}
+
+		public virtual bool Prepare(Actor self, Order order, SupportPowerManager manager)
+		{
+			return true;
 		}
 
 		public virtual void Activate(Actor self, Order order, SupportPowerManager manager)
