@@ -297,6 +297,7 @@ namespace OpenRA
 
 		// added for CA
 		public bool SelectionTooltip = true;
+		public bool IdleFactoryAlert = true;
 
 		public TextNotificationPoolFilters TextNotificationPoolFilters = TextNotificationPoolFilters.Feedback | TextNotificationPoolFilters.Transients;
 	}
