@@ -145,6 +145,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 			// added for CA
 			SettingsUtils.BindCheckboxPref(panel, "SELECTIONTOOLTIP_CHECKBOX", gs, "SelectionTooltip");
+			SettingsUtils.BindCheckboxPref(panel, "IDLE_FACTORY_ALERT_CHECKBOX", gs, "IdleFactoryAlert");
 
 			SettingsUtils.BindCheckboxPref(panel, "CURSORDOUBLE_CHECKBOX", ds, "CursorDouble");
 			SettingsUtils.BindCheckboxPref(panel, "VSYNC_CHECKBOX", ds, "VSync");
