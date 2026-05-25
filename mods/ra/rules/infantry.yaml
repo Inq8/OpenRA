@@ -106,6 +106,8 @@ E1:
 	WithProductionIconOverlay:
 		Types: Veterancy
 		Prerequisites: barracks.upgraded
+	Mobile:
+		ResponsiveBetweenCells: true
 
 E1R1:
 	Inherits: E1
