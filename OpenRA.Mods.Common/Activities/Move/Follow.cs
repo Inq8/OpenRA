@@ -17,7 +17,7 @@ using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Activities
 {
-	public class Follow : Activity
+	public class Follow : Activity, IResponsiveMoveTarget
 	{
 		readonly WDist minRange;
 		readonly WDist maxRange;
@@ -84,6 +84,22 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			if (targetLineColor != null)
 				yield return new TargetLineNode(useLastVisibleTarget ? lastVisibleTarget : target, targetLineColor.Value);
+		}
+
+		bool IResponsiveMoveTarget.TryGetResponsiveMoveTarget(Actor self, out WPos targetPosition)
+		{
+			var responsiveTarget = useLastVisibleTarget ? lastVisibleTarget : target;
+			if (!responsiveTarget.IsValidFor(self))
+				responsiveTarget = lastVisibleTarget.IsValidFor(self) ? lastVisibleTarget : target;
+
+			if (responsiveTarget.Type == TargetType.Invalid)
+			{
+				targetPosition = default;
+				return false;
+			}
+
+			targetPosition = responsiveTarget.CenterPosition;
+			return true;
 		}
 	}
 }
