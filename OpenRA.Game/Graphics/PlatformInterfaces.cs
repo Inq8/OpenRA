@@ -83,7 +83,8 @@ namespace OpenRA
 
 	public interface IGraphicsContext : IDisposable
 	{
-		IVertexBuffer<T> CreateVertexBuffer<T>(int size) where T : struct;
+		IVertexBuffer<T> CreateEmptyVertexBuffer<T>(int size) where T : struct;
+		IVertexBuffer<T> CreateVertexBuffer<T>(T[] data, bool dynamic = true) where T : struct;
 		T[] CreateVertices<T>(int size) where T : struct;
 		IIndexBuffer CreateIndexBuffer(uint[] indices);
 		ITexture CreateTexture();
@@ -135,6 +136,7 @@ namespace OpenRA
 		void SetVec(string name, float x, float y);
 		void SetVec(string name, float x, float y, float z);
 		void SetVec(string name, float[] vec, int length);
+		void SetVec(string name, float[] vec, int components, int count);
 		void SetTexture(string param, ITexture texture);
 		void SetMatrix(string param, float[] mtx);
 		void PrepareRender();

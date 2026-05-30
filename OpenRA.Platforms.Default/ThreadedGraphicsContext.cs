@@ -45,6 +45,7 @@ namespace OpenRA.Platforms.Default
 		Func<ITexture> getCreateTexture;
 		Func<object, IFrameBuffer> getCreateFrameBuffer;
 		Func<object, IShader> getCreateShader;
+		Func<object, object> getCreateEmptyVertexBuffer;
 		Func<object, object> getCreateVertexBuffer;
 		Func<object, IIndexBuffer> getCreateIndexBuffer;
 		Action<object> doDrawPrimitives;
@@ -96,11 +97,25 @@ namespace OpenRA.Platforms.Default
 								context.CreateFrameBuffer(t.Item1, (ITextureInternal)CreateTexture(), t.Item2));
 						};
 					getCreateShader = bindings => new ThreadedShader(this, context.CreateShader((IShaderBindings)bindings));
-					getCreateVertexBuffer =
+					getCreateEmptyVertexBuffer =
 						tuple =>
 						{
 							(object t, var type) = ((int, Type))tuple;
-							var vertexBuffer = context.GetType().GetMethod(nameof(CreateVertexBuffer)).MakeGenericMethod(type).Invoke(context, new[] { t });
+							var vertexBuffer = context.GetType()
+								.GetMethod(nameof(CreateEmptyVertexBuffer))
+								.MakeGenericMethod(type)
+								.Invoke(context, new[] { t });
+
+							return typeof(ThreadedVertexBuffer<>).MakeGenericType(type).GetConstructors()[0].Invoke(new[] { this, vertexBuffer });
+						};
+					getCreateVertexBuffer =
+						tuple =>
+						{
+							var (array, dynamic, type) = ((object, bool, Type))tuple;
+							var vertexBuffer = context.GetType()
+								.GetMethod(nameof(CreateVertexBuffer))
+								.MakeGenericMethod(type)
+								.Invoke(context, new[] { array, dynamic });
 							return typeof(ThreadedVertexBuffer<>).MakeGenericType(type).GetConstructors()[0].Invoke(new[] { this, vertexBuffer });
 						};
 					getCreateIndexBuffer = indices => new ThreadedIndexBuffer(this, context.CreateIndexBuffer((uint[])indices));
@@ -426,9 +441,14 @@ namespace OpenRA.Platforms.Default
 			return Send(getCreateTexture);
 		}
 
-		public IVertexBuffer<T> CreateVertexBuffer<T>(int size) where T : struct
+		public IVertexBuffer<T> CreateEmptyVertexBuffer<T>(int size) where T : struct
 		{
-			return (IVertexBuffer<T>)Send(getCreateVertexBuffer, (size, typeof(T)));
+			return (IVertexBuffer<T>)Send(getCreateEmptyVertexBuffer, (size, typeof(T)));
+		}
+
+		public IVertexBuffer<T> CreateVertexBuffer<T>(T[] data, bool dynamic = true) where T : struct
+		{
+			return (IVertexBuffer<T>)Send(getCreateVertexBuffer, ((object)data, dynamic, typeof(T)));
 		}
 
 		public IIndexBuffer CreateIndexBuffer(uint[] indices)
@@ -749,6 +769,7 @@ namespace OpenRA.Platforms.Default
 		readonly Action<object> setVec2;
 		readonly Action<object> setVec3;
 		readonly Action<object> setVec4;
+		readonly Action<object> setVecArray;
 		readonly Action bind;
 
 		public ThreadedShader(ThreadedGraphicsContext device, IShader shader)
@@ -763,6 +784,7 @@ namespace OpenRA.Platforms.Default
 			setVec2 = tuple => { var t = ((string, float[], int))tuple; shader.SetVec(t.Item1, t.Item2, t.Item3); };
 			setVec3 = tuple => { var t = ((string, float, float))tuple; shader.SetVec(t.Item1, t.Item2, t.Item3); };
 			setVec4 = tuple => { var t = ((string, float, float, float))tuple; shader.SetVec(t.Item1, t.Item2, t.Item3, t.Item4); };
+			setVecArray = tuple => { var t = ((string, float[], int, int))tuple; shader.SetVec(t.Item1, t.Item2, t.Item3, t.Item4); };
 		}
 
 		public void Bind()
@@ -809,5 +831,11 @@ namespace OpenRA.Platforms.Default
 		{
 			device.Post(setVec4, (name, x, y, z));
 		}
+
+		public void SetVec(string name, float[] vec, int components, int count)
+		{
+			device.Post(setVecArray, (name, vec, components, count));
+		}
+
 	}
 }

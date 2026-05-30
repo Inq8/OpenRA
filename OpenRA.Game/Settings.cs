@@ -222,6 +222,9 @@ namespace OpenRA
 			"Automatic: Use the first supported profile.")]
 		public GLProfile GLProfile = GLProfile.Automatic;
 
+		[Desc("Enable screen-space glow effect along laser beams.")]
+		public bool LaserGlow = true;
+
 		public int BatchSize = 8192;
 		public int SheetSize = 2048;
 	}

@@ -112,13 +112,30 @@ namespace OpenRA.Platforms.Default
 			for (var i = 0; i < numUniforms; i++)
 			{
 				var sb = new StringBuilder(128);
-				OpenGL.glGetActiveUniform(program, i, 128, out _, out _, out var type, sb);
+				OpenGL.glGetActiveUniform(program, i, 128, out _, out var uniformSize, out var type, sb);
 				OpenGL.CheckGLError();
 
 				var sampler = sb.ToString();
 				var loc = OpenGL.glGetUniformLocation(program, sampler);
 				OpenGL.CheckGLError();
 				uniformCache[sampler] = loc;
+
+				// For uniform arrays, OpenGL reports the name as "Name[0]"; register the bare "Name"
+				// and pre-register all element locations ("Name[1]", "Name[2]", etc.).
+				// ANGLE/ES rejects glUniformXfv with count > 1, so callers set individual elements
+				// using these pre-registered per-element locations.
+				if (sampler.EndsWith("[0]", StringComparison.Ordinal))
+				{
+					var bareName = sampler.Substring(0, sampler.Length - 3);
+					uniformCache[bareName] = loc;
+					for (var j = 1; j < uniformSize; j++)
+					{
+						var elemName = $"{bareName}[{j}]";
+						var elemLoc = OpenGL.glGetUniformLocation(program, elemName);
+						OpenGL.CheckGLError();
+						uniformCache[elemName] = elemLoc;
+					}
+				}
 
 				if (type == OpenGL.GL_SAMPLER_2D)
 				{
@@ -233,6 +250,29 @@ namespace OpenRA.Platforms.Default
 						case 3: OpenGL.glUniform3fv(param, 1, ptr); break;
 						case 4: OpenGL.glUniform4fv(param, 1, ptr); break;
 						default: throw new InvalidDataException("Invalid vector length");
+					}
+				}
+			}
+
+			OpenGL.CheckGLError();
+		}
+
+		public void SetVec(string name, float[] vec, int components, int count)
+		{
+			VerifyThreadAffinity();
+			var param = uniformCache[name];
+			unsafe
+			{
+				fixed (float* pVec = vec)
+				{
+					var ptr = new IntPtr(pVec);
+					switch (components)
+					{
+						case 1: OpenGL.glUniform1fv(param, count, ptr); break;
+						case 2: OpenGL.glUniform2fv(param, count, ptr); break;
+						case 3: OpenGL.glUniform3fv(param, count, ptr); break;
+						case 4: OpenGL.glUniform4fv(param, count, ptr); break;
+						default: throw new InvalidDataException("Invalid component count");
 					}
 				}
 			}
