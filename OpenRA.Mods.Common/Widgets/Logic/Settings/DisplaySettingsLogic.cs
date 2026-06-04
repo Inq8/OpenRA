@@ -70,6 +70,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		[FluentReference]
 		const string WeaponPostFXLabel = "checkbox-weapon-postfx";
+
 		static readonly int OriginalVideoDisplay;
 		static readonly WindowMode OriginalGraphicsMode;
 		static readonly int2 OriginalGraphicsWindowedSize;
