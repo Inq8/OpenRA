@@ -46,8 +46,9 @@ namespace OpenRA.Mods.Common.Traits
 		readonly IShader shader;
 		readonly IVertexBuffer<RenderPostProcessPassVertex> buffer;
 
-		readonly List<(WPos Source, WPos Target, Color Color, float Scale)> pendingGlows = new();
-		readonly List<(WPos Source, WPos Target, Color Color, float Scale, int FramesRemaining, int TotalFrames, int FadeInFrames)> fadingGlows = new();
+		readonly List<(WPos Source, WPos Target, Color Color, float Scale, float Intensity)> pendingGlows = new();
+		readonly List<(WPos Source, WPos Target, Color Color, float Scale, float Intensity, int FramesRemaining, int TotalFrames, int FadeInFrames)>
+			fadingGlows = new();
 		readonly Dictionary<WPos, int> glowsPerSource = new();
 
 		readonly float[] beamStarts = new float[MaxBeamsPerBatch * 2];
@@ -68,11 +69,12 @@ namespace OpenRA.Mods.Common.Traits
 			}, false);
 		}
 
-		public void RegisterGlow(WPos source, WPos target, Color color, float scale = 1f, int fadeFrames = 0, int fadeInFrames = 0)
+		// intensity is a brightness-only multiplier (independent of scale, which also drives radius).
+		public void RegisterGlow(WPos source, WPos target, Color color, float scale = 1f, int fadeFrames = 0, int fadeInFrames = 0, float intensity = 1f)
 		{
 			if (fadeFrames > 0)
 			{
-				fadingGlows.Add((source, target, color, scale, fadeFrames, fadeFrames, fadeInFrames));
+				fadingGlows.Add((source, target, color, scale, intensity, fadeFrames, fadeFrames, fadeInFrames));
 				return;
 			}
 
@@ -83,7 +85,7 @@ namespace OpenRA.Mods.Common.Traits
 				return;
 
 			glowsPerSource[source] = count + 1;
-			pendingGlows.Add((source, target, color, scale));
+			pendingGlows.Add((source, target, color, scale, intensity));
 		}
 
 		PostProcessPassType IRenderPostProcessPass.Type => PostProcessPassType.AfterActors;
@@ -103,7 +105,7 @@ namespace OpenRA.Mods.Common.Traits
 			}
 
 			// Collect all glows for this frame into one flat list so they can be batched together.
-			var batch = new List<(WPos Source, WPos Target, Color Color, float Scale)>(pendingGlows.Count + fadingGlows.Count);
+			var batch = new List<(WPos Source, WPos Target, Color Color, float Scale, float Intensity)>(pendingGlows.Count + fadingGlows.Count);
 			foreach (var g in pendingGlows)
 				batch.Add(g);
 			pendingGlows.Clear();
@@ -122,12 +124,12 @@ namespace OpenRA.Mods.Common.Traits
 					fadeScale = fadeOutTotal > 0 ? (float)glow.FramesRemaining / fadeOutTotal : 1f;
 				}
 
-				batch.Add((glow.Source, glow.Target, glow.Color, glow.Scale * fadeScale));
+				batch.Add((glow.Source, glow.Target, glow.Color, glow.Scale * fadeScale, glow.Intensity));
 
 				if (glow.FramesRemaining <= 1)
 					fadingGlows.RemoveAt(i);
 				else
-					fadingGlows[i] = (glow.Source, glow.Target, glow.Color, glow.Scale, glow.FramesRemaining - 1, glow.TotalFrames, glow.FadeInFrames);
+					fadingGlows[i] = (glow.Source, glow.Target, glow.Color, glow.Scale, glow.Intensity, glow.FramesRemaining - 1, glow.TotalFrames, glow.FadeInFrames);
 			}
 
 			// Draw glows in fixed-size batches. Each batch takes one framebuffer snapshot and runs
@@ -149,7 +151,7 @@ namespace OpenRA.Mods.Common.Traits
 					glowColors[i * 3] = g.Color.R / 255f;
 					glowColors[i * 3 + 1] = g.Color.G / 255f;
 					glowColors[i * 3 + 2] = g.Color.B / 255f;
-					glowIntensities[i] = info.GlowIntensity * g.Scale * (g.Color.A / 255f);
+					glowIntensities[i] = info.GlowIntensity * g.Scale * g.Intensity * (g.Color.A / 255f);
 					glowRadii[i] = info.GlowRadius * g.Scale;
 				}
 
