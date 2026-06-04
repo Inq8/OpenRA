@@ -48,7 +48,7 @@ namespace OpenRA.Mods.Common.Graphics
 			if (vecLength == 0)
 				return;
 
-			if (Game.Settings.Graphics.LaserGlow)
+			if (Game.Settings.Graphics.WeaponPostfx)
 				wr.World.WorldActor.TraitOrDefault<GlowRenderer>()
 					?.RegisterGlow(Pos, Pos + length, color, width.Length / 86f);
 
