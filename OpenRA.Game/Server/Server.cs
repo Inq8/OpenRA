@@ -161,6 +161,8 @@ namespace OpenRA.Server
 			set => internalState = value;
 		}
 
+		public DateTime StartTimeUtc => gameInfo?.StartTimeUtc ?? DateTime.MinValue;
+
 		public static void SyncClientToPlayerReference(Session.Client c, PlayerReference pr)
 		{
 			if (pr == null)
