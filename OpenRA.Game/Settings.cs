@@ -222,6 +222,9 @@ namespace OpenRA
 			"Automatic: Use the first supported profile.")]
 		public GLProfile GLProfile = GLProfile.Automatic;
 
+		[Desc("Enable post processing FX on weapons.")]
+		public bool WeaponPostfx = true;
+
 		public int BatchSize = 8192;
 		public int SheetSize = 2048;
 	}

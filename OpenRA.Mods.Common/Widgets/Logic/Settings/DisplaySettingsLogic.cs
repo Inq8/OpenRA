@@ -67,6 +67,10 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 		[FluentReference("fps")]
 		const string FrameLimiter = "checkbox-frame-limiter";
+
+		[FluentReference]
+		const string WeaponPostFXLabel = "checkbox-weapon-postfx";
+
 		static readonly int OriginalVideoDisplay;
 		static readonly WindowMode OriginalGraphicsMode;
 		static readonly int2 OriginalGraphicsWindowedSize;
@@ -152,6 +156,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			SettingsUtils.BindCheckboxPref(panel, "FRAME_LIMIT_GAMESPEED_CHECKBOX", ds, "CapFramerateToGameFps");
 			SettingsUtils.BindIntSliderPref(panel, "FRAME_LIMIT_SLIDER", ds, "MaxFramerate");
 			SettingsUtils.BindCheckboxPref(panel, "PLAYER_STANCE_COLORS_CHECKBOX", gs, "UsePlayerStanceColors");
+			SettingsUtils.BindCheckboxPref(panel, "WEAPON_POSTFX_CHECKBOX", ds, "WeaponPostfx");
 
 			var cb = panel.Get<CheckboxWidget>("PLAYER_STANCE_COLORS_CHECKBOX");
 			cb.IsChecked = () => gs.UsePlayerStanceColors;
@@ -328,6 +333,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				ds.CapFramerateToGameFps = dds.CapFramerateToGameFps;
 				ds.GLProfile = dds.GLProfile;
 				ds.Mode = dds.Mode;
+				ds.WeaponPostfx = dds.WeaponPostfx;
 				ds.VideoDisplay = dds.VideoDisplay;
 				ds.WindowedSize = dds.WindowedSize;
 				ds.CursorDouble = dds.CursorDouble;

@@ -10,6 +10,7 @@
 #endregion
 
 using OpenRA.Graphics;
+using OpenRA.Mods.Common.Traits;
 using OpenRA.Primitives;
 
 namespace OpenRA.Mods.Common.Graphics
@@ -46,6 +47,10 @@ namespace OpenRA.Mods.Common.Graphics
 			var vecLength = length.Length;
 			if (vecLength == 0)
 				return;
+
+			if (Game.Settings.Graphics.WeaponPostfx)
+				wr.World.WorldActor.TraitOrDefault<GlowRenderer>()
+					?.RegisterGlow(Pos, Pos + length, color, width.Length / 86f);
 
 			if (shape == BeamRenderableShape.Flat)
 			{
