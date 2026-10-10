@@ -31,6 +31,10 @@ checkbox-short-game =
     .label = Short Game
     .description = Players are defeated when their bases are destroyed
 
+checkbox-blind-pick-mode =
+    .label = Blind Pick Mode
+    .description = Players cannot see the factions chosen by opposing human players in the lobby
+
 dropdown-tech-level =
     .label = Tech Level
     .description = The units and abilities available to players

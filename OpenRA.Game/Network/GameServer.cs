@@ -31,12 +31,12 @@ namespace OpenRA.Network
 
 		public GameClient() { }
 
-		public GameClient(Session.Client c)
+		public GameClient(Session.Client c, bool hideFaction = false)
 		{
 			Name = c.Name;
 			Fingerprint = c.Fingerprint;
 			Color = c.Color;
-			Faction = c.Faction;
+			Faction = hideFaction ? "Random" : c.Faction;
 			Team = c.Team;
 			SpawnPoint = c.SpawnPoint;
 			IsAdmin = c.IsAdmin;
@@ -227,7 +227,8 @@ namespace OpenRA.Network
 			ModIcon32 = manifest.Metadata.WebIcon32;
 			Protected = !string.IsNullOrEmpty(server.Settings.Password);
 			Authentication = server.Settings.RequireAuthentication || server.Settings.ProfileIDWhitelist.Length > 0;
-			Clients = server.LobbyInfo.Clients.Select(c => new GameClient(c)).ToArray();
+			var hideFactions = server.State == Server.ServerState.GameStarted && server.StartTimeUtc > DateTime.UtcNow - TimeSpan.FromMinutes(4);
+			Clients = server.LobbyInfo.Clients.Select(c => new GameClient(c, hideFactions)).ToArray();
 			DisabledSpawnPoints = server.LobbyInfo.DisabledSpawnPoints?.ToArray() ?? Array.Empty<int>();
 		}
 

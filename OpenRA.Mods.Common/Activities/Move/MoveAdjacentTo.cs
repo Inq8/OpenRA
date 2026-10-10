@@ -17,7 +17,7 @@ using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Activities
 {
-	public class MoveAdjacentTo : Activity
+	public class MoveAdjacentTo : Activity, IResponsiveMoveTarget
 	{
 		protected readonly Mobile Mobile;
 		readonly Color? targetLineColor;
@@ -154,6 +154,22 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			if (targetLineColor.HasValue)
 				yield return new TargetLineNode(useLastVisibleTarget ? lastVisibleTarget : target, targetLineColor.Value);
+		}
+
+		bool IResponsiveMoveTarget.TryGetResponsiveMoveTarget(Actor self, out WPos targetPosition)
+		{
+			var responsiveTarget = useLastVisibleTarget ? lastVisibleTarget : target;
+			if (!responsiveTarget.IsValidFor(self))
+				responsiveTarget = lastVisibleTarget.IsValidFor(self) ? lastVisibleTarget : target;
+
+			if (responsiveTarget.Type == TargetType.Invalid)
+			{
+				targetPosition = default;
+				return false;
+			}
+
+			targetPosition = responsiveTarget.CenterPosition;
+			return true;
 		}
 	}
 }

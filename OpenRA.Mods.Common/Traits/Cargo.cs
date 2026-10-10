@@ -89,7 +89,7 @@ namespace OpenRA.Mods.Common.Traits
 
 	public class Cargo : ConditionalTrait<CargoInfo>, IIssueOrder, IResolveOrder, IOrderVoice,
 		INotifyOwnerChanged, INotifySold, INotifyActorDisposing, IIssueDeployOrder,
-		INotifyCreated, INotifyKilled, ITransformActorInitModifier
+		INotifyCreated, INotifyKilled, ITransformActorInitModifier, INotifyPassengersDamage
 	{
 		readonly Actor self;
 		readonly List<Actor> cargo = new();
@@ -482,6 +482,27 @@ namespace OpenRA.Mods.Common.Traits
 		void ITransformActorInitModifier.ModifyTransformActorInit(Actor self, TypeDictionary init)
 		{
 			init.Add(new RuntimeCargoInit(Info, Passengers.ToArray()));
+		}
+
+		int DamageVersus(Actor victim, Dictionary<string, int> versus)
+		{
+			// If no Versus values are defined, DamageVersus would return 100 anyway, so we might as well do that early.
+			if (versus.Count == 0)
+				return 100;
+			var armor = victim.TraitsImplementing<Armor>()
+				.Where(a => !a.IsTraitDisabled && a.Info.Type != null && versus.ContainsKey(a.Info.Type))
+				.Select(a => versus[a.Info.Type]);
+			return Util.ApplyPercentageModifiers(100, armor);
+		}
+
+		void INotifyPassengersDamage.DamagePassengers(int damage, Actor attacker, int amount, Dictionary<string, int> versus, BitSet<DamageType> damageTypes, IEnumerable<int> damageModifiers)
+		{
+			var passengersToDamage = amount > 0 && amount < Passengers.Count() ? Passengers.Shuffle(self.World.SharedRandom).Take(amount) : Passengers;
+			foreach (var passenger in passengersToDamage)
+			{
+				var d = Util.ApplyPercentageModifiers(damage, damageModifiers.Append(DamageVersus(passenger, versus)));
+				passenger.InflictDamage(attacker, new Damage(d, damageTypes));
+			}
 		}
 	}
 

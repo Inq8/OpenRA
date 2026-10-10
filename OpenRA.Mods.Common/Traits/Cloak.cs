@@ -61,6 +61,12 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly string CloakSound = null;
 		public readonly string UncloakSound = null;
 
+		[Desc("Do the sounds play under shroud or fog.")]
+		public readonly bool AudibleThroughFog = false;
+
+		[Desc("Volume the sounds played at.")]
+		public readonly float Volume = 1f;
+
 		public readonly BitSet<DetectionType> DetectionTypes = new("Cloak");
 
 		[GrantedConditionReference]
@@ -213,6 +219,11 @@ namespace OpenRA.Mods.Common.Traits
 			return bounds;
 		}
 
+		bool SoundShouldStart(Actor self)
+		{
+			return Info.AudibleThroughFog || (!self.World.ShroudObscures(self.CenterPosition) && !self.World.FogObscures(self.CenterPosition));
+		}
+
 		void ITick.Tick(Actor self)
 		{
 			if (!IsTraitDisabled && !IsTraitPaused)
@@ -237,7 +248,7 @@ namespace OpenRA.Mods.Common.Traits
 				if (!(firstTick && Info.InitialDelay == 0) && (otherCloaks == null || !otherCloaks.Any(a => a.Cloaked)))
 				{
 					var pos = self.CenterPosition;
-					Game.Sound.Play(SoundType.World, Info.CloakSound, self.CenterPosition);
+					Game.Sound.Play(SoundType.World, Info.CloakSound, pos, SoundShouldStart(self) ? Info.Volume : 0f);
 
 					Func<WPos> posfunc = () => self.CenterPosition + Info.EffectOffset;
 					if (!Info.EffectTracksActor)
@@ -262,7 +273,7 @@ namespace OpenRA.Mods.Common.Traits
 				if (!(firstTick && Info.InitialDelay == 0) && (otherCloaks == null || !otherCloaks.Any(a => a.Cloaked)))
 				{
 					var pos = self.CenterPosition;
-					Game.Sound.Play(SoundType.World, Info.UncloakSound, pos);
+					Game.Sound.Play(SoundType.World, Info.UncloakSound, pos, SoundShouldStart(self) ? Info.Volume : 0f);
 
 					Func<WPos> posfunc = () => self.CenterPosition + Info.EffectOffset;
 					if (!Info.EffectTracksActor)
@@ -296,9 +307,32 @@ namespace OpenRA.Mods.Common.Traits
 			if (!Cloaked || self.Owner.IsAlliedWith(viewer))
 				return true;
 
-			return self.World.ActorsWithTrait<DetectCloaked>().Any(a => a.Actor.IsInWorld
-				&& a.Actor.Owner.IsAlliedWith(viewer) && Info.DetectionTypes.Overlaps(a.Trait.Info.DetectionTypes)
-				&& (self.CenterPosition - a.Actor.CenterPosition).LengthSquared <= a.Trait.Range.LengthSquared);
+			var searchRadius = self.World.ActorMap.LargestDetectionRange;
+			if (searchRadius == WDist.Zero)
+				return false;
+
+			var pos = self.CenterPosition;
+			var vec = new WVec(searchRadius.Length, searchRadius.Length, WDist.Zero.Length);
+
+			foreach (var actor in self.World.ActorMap.ActorsInBox(pos - vec, pos + vec))
+			{
+				if (!actor.IsInWorld || !actor.Owner.IsAlliedWith(viewer))
+					continue;
+
+				foreach (var detectCloaked in actor.TraitsImplementing<DetectCloaked>())
+				{
+					if (detectCloaked.IsTraitDisabled)
+						continue;
+
+					if (!Info.DetectionTypes.Overlaps(detectCloaked.Info.DetectionTypes))
+						continue;
+
+					if ((pos - actor.CenterPosition).LengthSquared <= detectCloaked.Range.LengthSquared)
+						return true;
+				}
+			}
+
+			return false;
 		}
 
 		Color IRadarColorModifier.RadarColorOverride(Actor self, Color color)

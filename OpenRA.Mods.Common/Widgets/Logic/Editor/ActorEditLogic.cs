@@ -50,6 +50,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		readonly Widget checkboxOptionTemplate;
 		readonly Widget sliderOptionTemplate;
 		readonly Widget dropdownOptionTemplate;
+		readonly Widget textFieldOptionTemplate;
 
 		ActorIDStatus actorIDStatus = ActorIDStatus.Normal;
 		ActorIDStatus nextActorIDStatus = ActorIDStatus.Normal;
@@ -84,6 +85,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			checkboxOptionTemplate = initContainer.Get("CHECKBOX_OPTION_TEMPLATE");
 			sliderOptionTemplate = initContainer.Get("SLIDER_OPTION_TEMPLATE");
 			dropdownOptionTemplate = initContainer.Get("DROPDOWN_OPTION_TEMPLATE");
+			textFieldOptionTemplate = initContainer.Get("TEXTFIELD_OPTION_TEMPLATE");
 			initContainer.RemoveChildren();
 
 			var deleteButton = actorEditPanel.Get<ButtonWidget>("DELETE_BUTTON");
@@ -318,6 +320,31 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						dropdown.OnClick = () => dropdown.ShowDropDown("LABEL_DROPDOWN_TEMPLATE", 270, labels, DropdownSetup);
 
 						initContainer.AddChild(dropdownContainer);
+					}
+					else if (o is EditorActorTextField tfo)
+					{
+						var textFieldContainer = textFieldOptionTemplate.Clone();
+						textFieldContainer.Bounds.Y = initContainer.Bounds.Height;
+						initContainer.Bounds.Height += textFieldContainer.Bounds.Height;
+						textFieldContainer.Get<LabelWidget>("LABEL").GetText = () => tfo.Name;
+
+						var editorActionHandle = new EditorActorOptionActionHandle<string>(tfo.OnChange, tfo.GetValue(SelectedActor));
+						editActorPreview.Add(editorActionHandle);
+
+						var textField = textFieldContainer.Get<TextFieldWidget>("OPTION");
+						textField.Text = tfo.GetValue(SelectedActor);
+
+						textField.OnTextEdited = () =>
+						{
+							tfo.OnChange(SelectedActor, textField.Text);
+							editorActionHandle.OnChange(textField.Text);
+						};
+
+						textField.OnEscKey = _ => { textField.YieldKeyboardFocus(); return true; };
+						textField.OnEnterKey = _ => { textField.YieldKeyboardFocus(); return true; };
+						typableFields.Add(textField);
+
+						initContainer.AddChild(textFieldContainer);
 					}
 				}
 

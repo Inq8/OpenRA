@@ -40,6 +40,26 @@ namespace OpenRA.Mods.Common.Traits
 		public readonly int ShortGameCheckboxDisplayOrder = 0;
 
 		[FluentReference]
+		[Desc("Descriptive label for the blind pick mode checkbox in the lobby.")]
+		public readonly string BlindPickModeCheckboxLabel = "checkbox-blind-pick-mode.label";
+
+		[FluentReference]
+		[Desc("Tooltip description for the blind pick mode checkbox in the lobby.")]
+		public readonly string BlindPickModeCheckboxDescription = "checkbox-blind-pick-mode.description";
+
+		[Desc("Default value of the blind pick mode checkbox in the lobby.")]
+		public readonly bool BlindPickModeCheckboxEnabled = false;
+
+		[Desc("Prevent the blind pick mode state from being changed in the lobby.")]
+		public readonly bool BlindPickModeCheckboxLocked = false;
+
+		[Desc("Whether to display the blind pick mode checkbox in the lobby.")]
+		public readonly bool BlindPickModeCheckboxVisible = true;
+
+		[Desc("Display order for the blind pick mode checkbox in the lobby.")]
+		public readonly int BlindPickModeCheckboxDisplayOrder = 0;
+
+		[FluentReference]
 		[Desc("Descriptive label for the tech level option in the lobby.")]
 		public readonly string TechLevelDropdownLabel = "dropdown-tech-level.label";
 
@@ -84,6 +104,10 @@ namespace OpenRA.Mods.Common.Traits
 			yield return new LobbyBooleanOption(map, "shortgame",
 				ShortGameCheckboxLabel, ShortGameCheckboxDescription,
 				ShortGameCheckboxVisible, ShortGameCheckboxDisplayOrder, ShortGameCheckboxEnabled, ShortGameCheckboxLocked);
+
+			yield return new LobbyBooleanOption(map, "blindpick",
+				BlindPickModeCheckboxLabel, BlindPickModeCheckboxDescription,
+				BlindPickModeCheckboxVisible, BlindPickModeCheckboxDisplayOrder, BlindPickModeCheckboxEnabled, BlindPickModeCheckboxLocked);
 
 			var techLevels = map.PlayerActorInfo.TraitInfos<ProvidesTechPrerequisiteInfo>()
 				.ToDictionary(t => t.Id, t => map.GetMessage(t.Name));

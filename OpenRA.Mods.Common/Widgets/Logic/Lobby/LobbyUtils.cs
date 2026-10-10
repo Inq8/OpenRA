@@ -583,7 +583,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		}
 
 		public static void SetupEditableFactionWidget(Widget parent, Session.Slot s, Session.Client c, OrderManager orderManager,
-			Dictionary<string, LobbyFaction> factions)
+			Dictionary<string, LobbyFaction> factions, Func<bool> showFaction = null)
 		{
 			var dropdown = parent.Get<DropDownButtonWidget>("FACTION");
 			dropdown.IsDisabled = () => s.LockFaction || orderManager.LocalClient.IsReady;
@@ -594,18 +594,22 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			dropdown.GetTooltipText = () => text;
 			dropdown.GetTooltipDesc = () => desc;
 
-			SetupFactionWidget(dropdown, c, factions);
+			SetupFactionWidget(dropdown, c, factions, showFaction);
 		}
 
-		public static void SetupFactionWidget(Widget parent, Session.Client c, Dictionary<string, LobbyFaction> factions)
+		public static void SetupFactionWidget(Widget parent, Session.Client c, Dictionary<string, LobbyFaction> factions,
+			Func<bool> showFaction = null)
 		{
+			showFaction ??= () => true;
+
 			var factionName = parent.Get<LabelWidget>("FACTIONNAME");
 			var font = Game.Renderer.Fonts[factionName.Font];
 			var truncated = new CachedTransform<string, string>(clientFaction =>
 				WidgetUtils.TruncateText(FluentProvider.GetMessage(factions[clientFaction].Name), factionName.Bounds.Width, font));
-			factionName.GetText = () => truncated.Update(c.Faction);
+			factionName.GetText = () => showFaction() ? truncated.Update(c.Faction) : string.Empty;
 
 			var factionFlag = parent.Get<ImageWidget>("FACTIONFLAG");
+			factionFlag.IsVisible = showFaction;
 			factionFlag.GetImageName = () => c.Faction;
 			factionFlag.GetImageCollection = () => "flags";
 		}

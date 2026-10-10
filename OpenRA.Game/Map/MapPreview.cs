@@ -533,7 +533,7 @@ namespace OpenRA
 					newData.Players = new MapPlayers(MiniYaml.FromString(playersString,
 						$"{yaml.NodeWithKey(nameof(r.players_block)).Location.Name}:{nameof(r.players_block)}"));
 
-					var rulesString = Encoding.UTF8.GetString(Convert.FromBase64String(r.rules));
+					var rulesString = Encoding.UTF8.GetString(Convert.FromBase64String(r.rules ?? ""));
 					var rulesYaml = new MiniYaml("", MiniYaml.FromString(rulesString,
 						$"{yaml.NodeWithKey(nameof(r.rules)).Location.Name}:{nameof(r.rules)}")).ToDictionary();
 					newData.SetCustomRules(modData, this, rulesYaml, null);

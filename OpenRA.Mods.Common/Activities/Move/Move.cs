@@ -19,7 +19,7 @@ using OpenRA.Traits;
 
 namespace OpenRA.Mods.Common.Activities
 {
-	public class Move : Activity
+	public class Move : Activity, IResponsiveMoveTarget
 	{
 		public WAngle ActorFacingModifier { get; private set; }
 		readonly Mobile mobile;
@@ -390,9 +390,34 @@ namespace OpenRA.Mods.Common.Activities
 				yield return new TargetLineNode(Target.FromCell(self.World, destination.Value), targetLineColor.Value);
 		}
 
-		abstract class MovePart : Activity
+		bool IResponsiveMoveTarget.TryGetResponsiveMoveTarget(Actor self, out WPos targetPosition)
+		{
+			if (destination.HasValue)
+			{
+				targetPosition = destination.Value.Layer == 0 ? self.World.Map.CenterOfCell(destination.Value) :
+					self.World.GetCustomMovementLayers()[destination.Value.Layer].CenterOfCell(destination.Value);
+				return true;
+			}
+
+			if (path != null && path.Count > 0)
+			{
+				var cell = path[0];
+				targetPosition = cell.Layer == 0 ? self.World.Map.CenterOfCell(cell) :
+					self.World.GetCustomMovementLayers()[cell.Layer].CenterOfCell(cell);
+				return true;
+			}
+
+			targetPosition = default;
+			return false;
+		}
+
+		abstract class MovePart : Activity, IResponsiveMoveTarget
 		{
 			protected readonly Move Move;
+			protected readonly CPos LandingFromCell;
+			protected readonly SubCell LandingFromSubCell;
+			protected readonly CPos LandingToCell;
+			protected readonly SubCell LandingToSubCell;
 			protected readonly WPos From, To;
 			protected readonly WAngle FromFacing, ToFacing;
 			protected readonly WRot? FromTerrainOrientation, ToTerrainOrientation;
@@ -409,10 +434,15 @@ namespace OpenRA.Mods.Common.Activities
 			protected int progress;
 
 			protected MovePart(Move move, WPos from, WPos to, WAngle fromFacing, WAngle toFacing,
+				CPos landingFromCell, SubCell landingFromSubCell, CPos landingToCell, SubCell landingToSubCell,
 				WRot? fromTerrainOrientation, WRot? toTerrainOrientation, int terrainOrientationMargin,
 				int carryoverProgress, bool shouldArc, bool movingOnGroundLayer)
 			{
 				Move = move;
+				LandingFromCell = landingFromCell;
+				LandingFromSubCell = landingFromSubCell;
+				LandingToCell = landingToCell;
+				LandingToSubCell = landingToSubCell;
 				From = from;
 				To = to;
 				FromFacing = fromFacing;
@@ -457,6 +487,15 @@ namespace OpenRA.Mods.Common.Activities
 			public override bool Tick(Actor self)
 			{
 				var mobile = Move.mobile;
+
+				if (ResponsiveMoveSupport.TryGetLanding(self, mobile,
+					LandingFromCell, LandingFromSubCell, LandingToCell, LandingToSubCell,
+					out var landing))
+				{
+					Queue(new ResponsiveMoveLanding(mobile, mobile.CenterPosition, landing,
+						LandingFromCell, LandingFromSubCell, LandingToCell, LandingToSubCell));
+					return true;
+				}
 
 				// Only move by a full speed step if we didn't already move this tick.
 				// If we did, we limit the move to any carried-over leftover progress.
@@ -520,11 +559,16 @@ namespace OpenRA.Mods.Common.Activities
 				return false;
 			}
 
-			protected abstract MovePart OnComplete(Actor self, Mobile mobile, Move parent);
+			protected abstract Activity OnComplete(Actor self, Mobile mobile, Move parent);
 
 			public override IEnumerable<Target> GetTargets(Actor self)
 			{
 				return Move.GetTargets(self);
+			}
+
+			bool IResponsiveMoveTarget.TryGetResponsiveMoveTarget(Actor self, out WPos targetPosition)
+			{
+				return ((IResponsiveMoveTarget)Move).TryGetResponsiveMoveTarget(self, out targetPosition);
 			}
 		}
 
@@ -535,8 +579,15 @@ namespace OpenRA.Mods.Common.Activities
 				WRot? fromTerrainOrientation, WRot? toTerrainOrientation, int terrainOrientationMargin, int carryoverProgress, bool shouldArc, bool movingOnGroundLayer)
 				: base(
 					  move, from, to, fromFacing, toFacing,
+					  move.mobile.FromCell, move.mobile.FromSubCell, move.mobile.ToCell, move.mobile.ToSubCell,
 					  fromTerrainOrientation, toTerrainOrientation, terrainOrientationMargin, carryoverProgress, shouldArc, movingOnGroundLayer)
 			{ }
+
+			protected override void OnFirstRun(Actor self)
+			{
+				var mobile = Move.mobile;
+				mobile.EnteringCell(self);
+			}
 
 			bool IsTurn(Actor self, Mobile mobile, CPos nextCell, Map map)
 			{
@@ -555,7 +606,7 @@ namespace OpenRA.Mods.Common.Activities
 				return delta != 0 && (delta < 384 || delta > 640);
 			}
 
-			protected override MovePart OnComplete(Actor self, Mobile mobile, Move parent)
+			protected override Activity OnComplete(Actor self, Mobile mobile, Move parent)
 			{
 				var map = self.World.Map;
 				var fromSubcellOffset = map.Grid.OffsetOfSubCell(mobile.FromSubCell);
@@ -602,6 +653,10 @@ namespace OpenRA.Mods.Common.Activities
 					toPos + toSubcellOffset,
 					mobile.Facing,
 					TurnsWhileMoving ? map.FacingBetween(mobile.FromCell, mobile.ToCell, mobile.Facing) + Move.ActorFacingModifier : mobile.Facing,
+					mobile.FromCell,
+					mobile.FromSubCell,
+					mobile.ToCell,
+					mobile.ToSubCell,
 					ToTerrainOrientation,
 					null,
 					mobile.Info.TerrainOrientationAdjustmentMargin.Length,
@@ -619,13 +674,15 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			public MoveSecondHalf(
 				Move move, WPos from, WPos to, WAngle fromFacing, WAngle toFacing,
+				CPos landingFromCell, SubCell landingFromSubCell, CPos landingToCell, SubCell landingToSubCell,
 				WRot? fromTerrainOrientation, WRot? toTerrainOrientation, int terrainOrientationMargin, int carryoverProgress, bool shouldArc, bool movingOnGroundLayer)
 				: base(
 					  move, from, to, fromFacing, toFacing,
+					  landingFromCell, landingFromSubCell, landingToCell, landingToSubCell,
 					  fromTerrainOrientation, toTerrainOrientation, terrainOrientationMargin, carryoverProgress, shouldArc, movingOnGroundLayer)
 			{ }
 
-			protected override MovePart OnComplete(Actor self, Mobile mobile, Move parent)
+			protected override Activity OnComplete(Actor self, Mobile mobile, Move parent)
 			{
 				mobile.SetPosition(self, mobile.ToCell);
 

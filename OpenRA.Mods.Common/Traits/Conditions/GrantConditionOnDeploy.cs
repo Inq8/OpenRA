@@ -37,6 +37,9 @@ namespace OpenRA.Mods.Common.Traits
 		[Desc("Can this actor deploy on slopes?")]
 		public readonly bool CanDeployOnRamps = false;
 
+		[Desc("Does this actor need to synchronize it's deployment with other actors?")]
+		public readonly bool SmartDeploy = false;
+
 		[CursorReference]
 		[Desc("Cursor to display when able to (un)deploy the actor.")]
 		public readonly string DeployCursor = "deploy";
@@ -183,7 +186,42 @@ namespace OpenRA.Mods.Common.Traits
 			return new Order("GrantConditionOnDeploy", self, queued);
 		}
 
-		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self, bool queued) { return !IsTraitPaused && !IsTraitDisabled; }
+		bool IIssueDeployOrder.CanIssueDeployOrder(Actor self, bool queued) { return !IsTraitPaused && !IsTraitDisabled && IsGroupDeployNeeded(self); }
+
+		bool IsGroupDeployNeeded(Actor self)
+		{
+			if (!Info.SmartDeploy)
+				return true;
+
+			var actors = self.World.Selection.Actors;
+
+			bool hasDeployedActors = false;
+			bool hasUndeployedActors = false;
+
+			foreach (var a in actors)
+			{
+				GrantConditionOnDeploy gcod = null;
+				if (!a.IsDead && a.IsInWorld)
+					gcod = a.TraitOrDefault<GrantConditionOnDeploy>();
+
+				if (!hasDeployedActors && gcod != null && (gcod.DeployState == DeployState.Deploying || gcod.DeployState == DeployState.Deployed))
+					hasDeployedActors = true;
+
+				if (!hasUndeployedActors && gcod != null && (gcod.DeployState == DeployState.Undeploying || gcod.DeployState == DeployState.Undeployed))
+					hasUndeployedActors = true;
+
+				if (!self.IsDead && !self.Disposed && hasDeployedActors && hasUndeployedActors)
+				{
+					var self_gcod = self.TraitOrDefault<GrantConditionOnDeploy>();
+					if (self_gcod.DeployState == DeployState.Undeploying || self_gcod.DeployState == DeployState.Undeployed)
+						return true;
+
+					return false;
+				}
+			}
+
+			return true;
+		}
 
 		public void ResolveOrder(Actor self, Order order)
 		{

@@ -663,6 +663,11 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			if (orderManager.LocalClient == null)
 				return;
 
+			var blindPickEnabled = orderManager.LobbyInfo.GlobalSettings.OptionOrDefault("blindpick", false);
+			bool ShowFaction(Session.Client client) => !blindPickEnabled
+				|| client.Index == orderManager.LocalClient.Index
+				|| (client.Team != 0 && client.Team == orderManager.LocalClient.Team);
+
 			// Check if we are not assigned to any team, and are no spectator
 			// If we are a spectator, check if there are more and enable spectator chat
 			// Otherwise check if our assigned team has more players
@@ -725,7 +730,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 						LobbyUtils.SetupEditableNameWidget(template, client, orderManager, worldRenderer);
 
 					LobbyUtils.SetupEditableColorWidget(template, slot, client, orderManager, worldRenderer, colorManager);
-					LobbyUtils.SetupEditableFactionWidget(template, slot, client, orderManager, factions);
+					LobbyUtils.SetupEditableFactionWidget(template, slot, client, orderManager, factions, () => ShowFaction(client));
 					LobbyUtils.SetupEditableTeamWidget(template, slot, client, orderManager, map);
 					LobbyUtils.SetupEditableHandicapWidget(template, slot, client, orderManager);
 					LobbyUtils.SetupEditableSpawnWidget(template, slot, client, orderManager, map);
@@ -739,7 +744,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 
 					LobbyUtils.SetupLatencyWidget(template, client, orderManager);
 					LobbyUtils.SetupColorWidget(template, client);
-					LobbyUtils.SetupFactionWidget(template, client, factions);
+					LobbyUtils.SetupFactionWidget(template, client, factions, () => ShowFaction(client));
 
 					if (isHost)
 					{
@@ -924,7 +929,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				.OrderBy(o => o.DisplayOrder)
 				.ToArray();
 
-			resetOptionsButtonEnabled = mapOptions.Any(o => o.DefaultValue != serverOptions[o.Id].Value);
+			resetOptionsButtonEnabled = mapOptions.Any(o => serverOptions.ContainsKey(o.Id) && o.DefaultValue != serverOptions[o.Id].Value);
 		}
 
 		void OnGameStart()

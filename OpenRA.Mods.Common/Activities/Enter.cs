@@ -19,7 +19,7 @@ namespace OpenRA.Mods.Common.Activities
 {
 	public enum EnterBehaviour { Exit, Suicide, Dispose }
 
-	public abstract class Enter : Activity
+	public abstract class Enter : Activity, IResponsiveMoveTarget
 	{
 		enum EnterState { Approaching, Entering, Exiting, Finished }
 
@@ -158,6 +158,22 @@ namespace OpenRA.Mods.Common.Activities
 		{
 			if (targetLineColor != null)
 				yield return new TargetLineNode(useLastVisibleTarget ? lastVisibleTarget : target, targetLineColor.Value);
+		}
+
+		bool IResponsiveMoveTarget.TryGetResponsiveMoveTarget(Actor self, out WPos targetPosition)
+		{
+			var responsiveTarget = useLastVisibleTarget ? lastVisibleTarget : target;
+			if (!responsiveTarget.IsValidFor(self))
+				responsiveTarget = lastVisibleTarget.IsValidFor(self) ? lastVisibleTarget : target;
+
+			if (responsiveTarget.Type == TargetType.Invalid)
+			{
+				targetPosition = default;
+				return false;
+			}
+
+			targetPosition = responsiveTarget.CenterPosition;
+			return true;
 		}
 	}
 }
